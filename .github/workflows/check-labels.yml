@@ -1,8 +1,7 @@
 name: Check PR Labels
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, labeled]
+  - pull_request
 
 jobs:
   check-labels:
@@ -21,6 +20,6 @@ jobs:
             const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
 
             if (!hasRequiredLabel) {
-              core.setFailed("This pull request does not have the required label. Failing the job. ");
+              core.setFailed("This pull request does not have the required label. Failing the job.");
             }
  

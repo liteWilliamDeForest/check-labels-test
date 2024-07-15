@@ -21,7 +21,7 @@ jobs:
             const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
 
             if (!hasRequiredLabel) {
-              core.setFailed("This pull request does not have the required label. Failing the job.");
+              core.setFailed("This pull request does not have the required label. Failing the job. ");
             }
 
   dbt-job:

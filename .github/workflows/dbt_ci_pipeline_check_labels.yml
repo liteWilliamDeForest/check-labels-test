@@ -36,7 +36,7 @@ jobs:
     steps: 
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # not ideal but necessary for now
+          fetch-depth: 0 # not ideal but necessary for now .
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:

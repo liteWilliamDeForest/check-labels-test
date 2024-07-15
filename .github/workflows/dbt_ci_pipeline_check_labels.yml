@@ -1,160 +1,160 @@
-name: DBT Pipeline
-run-name: ${{ github.actor }} DBT Run 🚀
-on: 
-  - pull_request
+# name: DBT Pipeline
+# run-name: ${{ github.actor }} DBT Run 🚀
+# on: 
+#   - pull_request
 
-permissions:
-  contents: read
-  pull-requests: write
-  issues: read
-  checks: write
+# permissions:
+#   contents: read
+#   pull-requests: write
+#   issues: read
+#   checks: write
 
-jobs:
-  check-labels:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+# jobs:
+#   check-labels:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Check out repository
+#         uses: actions/checkout@v4
 
-      - name: Get PR Labels
-        id: get-labels
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const requiredLabels = ["bug", "enhancement", "maintenance"];
-            const labels = context.payload.pull_request.labels.map(label => label.name);
-            const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
+#       - name: Get PR Labels
+#         id: get-labels
+#         uses: actions/github-script@v6
+#         with:
+#           script: |
+#             const requiredLabels = ["bug", "enhancement", "maintenance"];
+#             const labels = context.payload.pull_request.labels.map(label => label.name);
+#             const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
 
-            if (!hasRequiredLabel) {
-              core.setFailed("This pull request does not have the required label. Failing the job.");
-            }
+#             if (!hasRequiredLabel) {
+#               core.setFailed("This pull request does not have the required label. Failing the job.");
+#             }
   
-  DBT: 
-    runs-on: ubuntu-latest
-    env:
-      DBT_ACCESS_TOKEN: ${{ secrets.DBT_ACCESS_TOKEN }}
-    steps: 
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # not ideal but necessary for now
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11' 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install flake8 pytest
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      #  - name: Lint with flake8
-      - name: Setup DBT
-        run: |
-          dbt deps
-      - name: Grab the manifest and generate docs
-        run: | 
-          MERGE_BASE=$(git merge-base origin/main ${{ github.sha }}) 
-          echo "MERGE_BASE=$MERGE_BASE"
-          git checkout $MERGE_BASE
-          dbt parse --target prod --profiles-dir .dbx
-          cp target/manifest.json .
-          git checkout ${{ github.sha }}
-      # this isn't working yet so kill it
-      - name: run pre-commit
-        run: | 
-          echo "current branch: $(git rev-parse --abbrev-ref HEAD)"
-          echo "Running dbt docs generate..."
-          dbt docs generate --profiles-dir .dbx --target dsa_ci
-          echo "Running pre-commit..."
-          pre-commit run --all-files --hook-stage manual
-      - name: Build
-        run: |
-          echo "current branch: $(git rev-parse --abbrev-ref HEAD)"
-          dbt build --selector "ci_run" --state . --profiles-dir .dbx --target dsa_ci --defer
-      - name: Upload artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: artifacts
-          path: |
-            target/run_results.json
-            target/manifest.json          
+#   DBT: 
+#     runs-on: ubuntu-latest
+#     env:
+#       DBT_ACCESS_TOKEN: ${{ secrets.DBT_ACCESS_TOKEN }}
+#     steps: 
+#       - uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0 # not ideal but necessary for now
+#       - name: Setup Python 3.11
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11' 
+#       - name: Install dependencies
+#         run: |
+#           python -m pip install --upgrade pip
+#           pip install flake8 pytest
+#           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+#       #  - name: Lint with flake8
+#       - name: Setup DBT
+#         run: |
+#           dbt deps
+#       - name: Grab the manifest and generate docs
+#         run: | 
+#           MERGE_BASE=$(git merge-base origin/main ${{ github.sha }}) 
+#           echo "MERGE_BASE=$MERGE_BASE"
+#           git checkout $MERGE_BASE
+#           dbt parse --target prod --profiles-dir .dbx
+#           cp target/manifest.json .
+#           git checkout ${{ github.sha }}
+#       # this isn't working yet so kill it
+#       - name: run pre-commit
+#         run: | 
+#           echo "current branch: $(git rev-parse --abbrev-ref HEAD)"
+#           echo "Running dbt docs generate..."
+#           dbt docs generate --profiles-dir .dbx --target dsa_ci
+#           echo "Running pre-commit..."
+#           pre-commit run --all-files --hook-stage manual
+#       - name: Build
+#         run: |
+#           echo "current branch: $(git rev-parse --abbrev-ref HEAD)"
+#           dbt build --selector "ci_run" --state . --profiles-dir .dbx --target dsa_ci --defer
+#       - name: Upload artifacts
+#         if: failure()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: artifacts
+#           path: |
+#             target/run_results.json
+#             target/manifest.json          
 
-  ai_debug: 
-    needs: DBT
-    runs-on: ubuntu-latest
-    if: failure()  # only run if the DBT job fails
-    env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # not ideal but necessary for now
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: artifacts
-          path: target/
-      - name: check download
-        run: |  # if target/manifest.json or target/run_results.json is missing, end the job
-          if [ ! -f target/manifest.json ] || [ ! -f target/run_results.json ]; then
-            echo "Missing manifest.json or run_results.json"
-            exit 1
-          fi
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11' 
-      - name: Install dependencies
-        run: |
-          mkdir -p target
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: AI Debug
-        id: ai_debug 
-        run: |
-          python .github/workflows/self-heal.py
-          suggestions=$(<debug_suggestions.md)
-          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          echo "suggestions<<EOF" >> $GITHUB_OUTPUT
-          echo "$suggestions" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-      - uses: actions/github-script@v6
-        if: github.event_name == 'pull_request'
-        env:
-          suggestions: ${{ steps.ai_debug.outputs.suggestions }}
-        with:
-          script: |
-            const issue_number = context.issue.number;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
+#   ai_debug: 
+#     needs: DBT
+#     runs-on: ubuntu-latest
+#     if: failure()  # only run if the DBT job fails
+#     env:
+#       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+#       PR_NUMBER: ${{ github.event.pull_request.number }}
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0 # not ideal but necessary for now
+#       - name: Download artifacts
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: artifacts
+#           path: target/
+#       - name: check download
+#         run: |  # if target/manifest.json or target/run_results.json is missing, end the job
+#           if [ ! -f target/manifest.json ] || [ ! -f target/run_results.json ]; then
+#             echo "Missing manifest.json or run_results.json"
+#             exit 1
+#           fi
+#       - name: Setup Python 3.11
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11' 
+#       - name: Install dependencies
+#         run: |
+#           mkdir -p target
+#           python -m pip install --upgrade pip
+#           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+#       - name: AI Debug
+#         id: ai_debug 
+#         run: |
+#           python .github/workflows/self-heal.py
+#           suggestions=$(<debug_suggestions.md)
+#           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+#           echo "suggestions<<EOF" >> $GITHUB_OUTPUT
+#           echo "$suggestions" >> $GITHUB_OUTPUT
+#           echo "EOF" >> $GITHUB_OUTPUT
+#       - uses: actions/github-script@v6
+#         if: github.event_name == 'pull_request'
+#         env:
+#           suggestions: ${{ steps.ai_debug.outputs.suggestions }}
+#         with:
+#           script: |
+#             const issue_number = context.issue.number;
+#             const owner = context.repo.owner;
+#             const repo = context.repo.repo;
       
-            // Get the list of comments on the PR.
-            const comments = await github.rest.issues.listComments({
-              owner: owner,
-              repo: repo,
-              issue_number: issue_number
-            });
+#             // Get the list of comments on the PR.
+#             const comments = await github.rest.issues.listComments({
+#               owner: owner,
+#               repo: repo,
+#               issue_number: issue_number
+#             });
       
-            // Check if there's an existing comment from the GitHub Actions bot.
-            const comment = comments.data.find(comment => comment.user.login === 'github-actions[bot]' && comment.body.startsWith('## AI Debugging Suggestions'));
+#             // Check if there's an existing comment from the GitHub Actions bot.
+#             const comment = comments.data.find(comment => comment.user.login === 'github-actions[bot]' && comment.body.startsWith('## AI Debugging Suggestions'));
 
-            const body = process.env.suggestions;
+#             const body = process.env.suggestions;
       
-            if (comment) {
-              // If there is, update that comment.
-              await github.rest.issues.updateComment({
-                owner: owner,
-                repo: repo,
-                comment_id: comment.id,
-                body: body
-              });
-            } else {
-              // If there isn't, create a new comment.
-              await github.rest.issues.createComment({
-                owner: owner,
-                repo: repo,
-                issue_number: issue_number,
-                body: body
-              });
-            }
+#             if (comment) {
+#               // If there is, update that comment.
+#               await github.rest.issues.updateComment({
+#                 owner: owner,
+#                 repo: repo,
+#                 comment_id: comment.id,
+#                 body: body
+#               });
+#             } else {
+#               // If there isn't, create a new comment.
+#               await github.rest.issues.createComment({
+#                 owner: owner,
+#                 repo: repo,
+#                 issue_number: issue_number,
+#                 body: body
+#               });
+#             }

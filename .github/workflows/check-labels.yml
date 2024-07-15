@@ -1,0 +1,36 @@
+name: Check PR Labels
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+jobs:
+  check-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Get PR Labels
+        id: get-labels
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const requiredLabels = ["bug", "enhancement", "maintenance"];
+            const labels = context.payload.pull_request.labels.map(label => label.name);
+            const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
+
+            if (!hasRequiredLabel) {
+              core.setFailed("This pull request does not have the required label. Failing the job.");
+            }
+
+  dbt-job:
+    runs-on: ubuntu-latest
+    needs: check-labels
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Run dbt
+        run: |
+          dbt run

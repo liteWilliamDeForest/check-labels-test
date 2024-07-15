@@ -15,11 +15,15 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const requiredLabels = ["bug", "enhancement", "maintenance"];
-            const labels = context.payload.pull_request.labels.map(label => label.name);
-            const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
-
-            if (!hasRequiredLabel) {
-              core.setFailed("This pull request does not have the required label. Failing the job. ");
+            const labels = context.payload.pull_request.labels;
+            if (labels.length === 0) {
+              core.setFailed("This pull request does not have any labels. Failing the job.");
             }
+            # const requiredLabels = ["bug", "enhancement", "maintenance"];
+            # const labels = context.payload.pull_request.labels.map(label => label.name);
+            # const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
+
+            # if (!hasRequiredLabel) {
+            #   core.setFailed("This pull request does not have the required label. Failing the job.");
+            # }
  

@@ -12,9 +12,11 @@ jobs:
 
       - name: Get PR Labels
         id: get-labels
-        uses: actions/github-script@v6
+        uses: actions/github-script@v5
         with:
           script: |
+            const { github, context, core } = require('@actions/github-script');
+
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,

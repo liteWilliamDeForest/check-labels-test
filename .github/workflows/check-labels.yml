@@ -1,28 +1,37 @@
 name: Check PR Labels
 
 on:
-  pull_request
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 jobs:
   check-labels:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Get PR Labels
         id: get-labels
         uses: actions/github-script@v6
         with:
           script: |
-            const labels = context.payload.pull_request.labels;
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: owner,
+              repo: repo,
+              pull_number: pull_number
+            });
+
+            const labels = pr.labels.map(label => label.name);
             if (labels.length === 0) {
               core.setFailed("This pull request does not have any labels. Failing the job.");
             }
 
-            // replace script content above with this block to require specific labels
+            // Uncomment and replace the script content above with this block to require specific labels
             // const requiredLabels = ["bug", "enhancement", "maintenance"];
-            // const labels = context.payload.pull_request.labels.map(label => label.name);
             // const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
 
             // if (!hasRequiredLabel) {

@@ -12,24 +12,17 @@ jobs:
 
       - name: Get PR Labels
         id: get-labels
-        uses: actions/github-script@v5
+        uses: actions/github-script@v6
         with:
           script: |
-            const { github, context, core } = require('@actions/github-script');
-
-            const pr = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number
-            });
-
-            const labels = pr.data.labels.map(label => label.name);
+            const labels = context.payload.pull_request.labels;
             if (labels.length === 0) {
               core.setFailed("This pull request does not have any labels. Failing the job.");
             }
 
-            // Uncomment and replace the script content above with this block to require specific labels
+            // replace script content above with this block to require specific labels
             // const requiredLabels = ["bug", "enhancement", "maintenance"];
+            // const labels = context.payload.pull_request.labels.map(label => label.name);
             // const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
 
             // if (!hasRequiredLabel) {

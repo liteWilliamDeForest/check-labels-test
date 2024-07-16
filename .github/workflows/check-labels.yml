@@ -1,7 +1,7 @@
 name: Check PR Labels
 
 on:
-  - pull_request
+  pull_request
 
 jobs:
   check-labels:
@@ -15,6 +15,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            const { github, context, core } = require('@actions/github');
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -26,9 +27,8 @@ jobs:
               core.setFailed("This pull request does not have any labels. Failing the job.");
             }
 
-            // replace script content above with this block to require specific labels
+            // Uncomment and replace the script content above with this block to require specific labels
             // const requiredLabels = ["bug", "enhancement", "maintenance"];
-            // const labels = context.payload.pull_request.labels.map(label => label.name);
             // const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
 
             // if (!hasRequiredLabel) {

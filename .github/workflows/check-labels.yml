@@ -19,11 +19,11 @@ jobs:
             if (labels.length === 0) {
               core.setFailed("This pull request does not have any labels. Failing the job.");
             }
-            # const requiredLabels = ["bug", "enhancement", "maintenance"];
-            # const labels = context.payload.pull_request.labels.map(label => label.name);
-            # const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
+            // replace script content above with this block to require specific labels
+            // const requiredLabels = ["bug", "enhancement", "maintenance"];
+            // const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
 
-            # if (!hasRequiredLabel) {
-            #   core.setFailed("This pull request does not have the required label. Failing the job.");
-            # }
+            // if (!hasRequiredLabel) {
+            //   core.setFailed("This pull request does not have the required label. Failing the job.");
+            // }
  

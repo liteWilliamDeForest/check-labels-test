@@ -15,13 +15,13 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const pr = await github.pulls.get({
+            const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number
             });
 
-            const labels = pr.data.labels.map(label => label.name);
+            const labels = pr.labels.map(label => label.name);
             if (labels.length === 0) {
               core.setFailed("This pull request does not have any labels. Failing the job.");
             }

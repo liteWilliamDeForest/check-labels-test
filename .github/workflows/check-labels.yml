@@ -1,7 +1,6 @@
 name: Check PR Labels
 on: 
-  pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+  - pull_request
 
 permissions:
   contents: read
@@ -31,6 +30,10 @@ jobs:
             });
 
             const labels = pr.labels.map(label => label.name);
-            if (labels.length === 0) {
-              core.setFailed("This pull request does not have any labels. Failing the job .");
+            if (! labels.some(label => ["bug", "enhancement", "maintenance"].includes(label))) {
+              core.setFailed("This pull request does not have any labels. Failing the job.");
             }
+
+            // if (! labels.some(label => ["bug", "enhancement", "maintenance"].includes(label))) {
+            // (labels.length === 0) {
+            // switch the error condition to this in order to make it check for specific labels

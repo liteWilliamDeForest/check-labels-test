@@ -1,8 +1,13 @@
 name: Check PR Labels
-
-on:
+on: 
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+  checks: write
 
 jobs:
   check-labels:
@@ -29,12 +34,3 @@ jobs:
             if (labels.length === 0) {
               core.setFailed("This pull request does not have any labels. Failing the job.");
             }
-
-            // Uncomment and replace the script content above with this block to require specific labels
-            // const requiredLabels = ["bug", "enhancement", "maintenance"];
-            // const hasRequiredLabel = labels.some(label => requiredLabels.includes(label));
-
-            // if (!hasRequiredLabel) {
-            //   core.setFailed("This pull request does not have the required label. Failing the job.");
-            // }
- 
